@@ -1,0 +1,22 @@
+
+Python ≥ 3.8
+
+PyTorch
+
+MONAI
+
+NumPy
+
+SciPy
+
+NiBabel
+
+SimpleITK
+
+DIPY
+
+Scikit-image
+
+OpenPyXL
+
+Matplotlib
