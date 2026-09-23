@@ -1,246 +1,144 @@
 # Boundary-Aware Preprocessing and Deep Learning Segmentation for Spinal Cord MRI
 
-This repository contains the full preprocessing and deep learning pipeline used in the study:
-
-**“Boundary-Aware Preprocessing for Robust Spinal Cord MRI Segmentation under Deformation and Compression”**
-
-The project implements a multi-stage MRI preprocessing framework followed by 3D U-Net–based segmentation using MONAI and PyTorch. It is designed for spinal cord MRI data acquired from multiple institutions under heterogeneous imaging conditions.
-
----
+A multi-stage MRI preprocessing framework followed by 3D U-Net segmentation using MONAI and PyTorch, designed for spinal cord MRI acquired across institutions under heterogeneous imaging conditions.
 
 ## Overview
 
-The pipeline consists of two main components:
+- **Preprocessing:** image-quality assessment, spatial standardization, intensity correction and normalization, contrast enhancement, edge-aware filtering, and quantitative evaluation.
+- **Deep learning:** 3D U-Net training with single-channel and multi-channel inputs, data augmentation, cross-dataset evaluation, and performance analysis.
 
-1. Preprocessing Module  
-   - Image quality assessment  
-   - Spatial standardization  
-   - Intensity correction and normalization  
-   - Contrast enhancement  
-   - Edge-aware filtering  
-   - Quantitative evaluation  
+## Repository structure
 
-2. Deep Learning Module  
-   - 3D U-Net training  
-   - Single-channel and multi-channel inputs  
-   - Data augmentation  
-   - Cross-dataset evaluation  
-   - Performance analysis  
+```text
+src/
+├── preprocessing/
+│   ├── 00_dataset_scan_stats.py
+│   ├── 01_resample.py
+│   ├── 02_crop.py
+│   ├── 03_n4_bias_correction.py
+│   ├── 04_nlm_denoising.py
+│   ├── 05_zscore_normalization.py
+│   ├── 06_clahe_histogram_equalization.py
+│   └── 07_log_filter.py
+└── training/
+    ├── 01_train_unet_no_augmentation.py
+    ├── 02_train_unet_with_augmentation.py
+    └── 03_train_unet_3channel.py
+requirements.txt
+LICENSE
+README.md
+```
 
-All scripts are organized sequentially and can be executed independently.
+## Data
 
----
+The study uses three institutional datasets, referred to as Site1, Site2, and Site3. Raw MRI data are not publicly distributed because of patient privacy and institutional restrictions.
 
-## Repository Structure
+Expected subject-folder structure:
 
-├── src/
-│ ├── preprocessing/
-│ │ ├── 00_dataset_scan_stats.py
-│ │ ├── 01_resample.py
-│ │ ├── 02_crop.py
-│ │ ├── 03_n4_bias_correction.py
-│ │ ├── 04_nlm_denoising.py
-│ │ ├── 05_zscore_normalization.py
-│ │ ├── 06_clahe_histogram_equalization.py
-│ │ └── 07_log_filter.py
-│ │
-│ └── training/
-│ ├── 01_train_unet_no_augmentation.py
-│ ├── 02_train_unet_with_augmentation.py
-│ ├── 03_train_unet_3channel.py
-│
-├── requirements.txt
-├── LICENSE
-└── README.md
-
-
----
-
-## Datasets
-
-This study uses three institutional datasets:
-
-- Site1  
-- Site2  
-- Site3  
-
-Due to privacy and ethical restrictions, raw MRI data are not publicly available.
-
-All scripts assume the following folder structure:
-
+```text
 DatasetRoot/
 ├── Subject_001/
-│ ├── T2s.nii.gz
-│ ├── T2s_manual_seg.nii.gz
-│ └── ...
-├── Subject_002/
-│ └── ...
+│   ├── T2s.nii.gz
+│   └── T2s_manual_seg.nii.gz
+└── Subject_002/
+    └── ...
+```
 
-
-Each subject folder must contain the corresponding image and segmentation mask.
-
----
+Each subject folder must contain the image and its corresponding segmentation mask. Configure input and output paths for your local datasets before running the scripts.
 
 ## Installation
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/your-repo-name.git
-cd your-repo-name
-2. Create environment (recommended)
+git clone https://github.com/H-Toufani/spinalcord-mri-preprocessing.git
+cd spinalcord-mri-preprocessing
+```
+
+### 2. Create an environment
+
 Using Conda:
 
+```bash
 conda create -n sc_mri python=3.9
 conda activate sc_mri
-Or using venv:
+```
 
+Alternatively, using venv on macOS or Linux:
+
+```bash
 python -m venv venv
 source venv/bin/activate
-3. Install dependencies
+```
+
+### 3. Install dependencies
+
+```bash
 pip install -r requirements.txt
-Requirements
-Main libraries:
+```
 
-Python ≥ 3.8
+Main libraries include PyTorch, MONAI, NumPy, SciPy, NiBabel, SimpleITK, DIPY, scikit-image, OpenPyXL, and Matplotlib. See `requirements.txt` for the dependency list.
 
-PyTorch
+## Preprocessing workflow
 
-MONAI
+Scripts are located in `src/preprocessing/` and follow this sequence:
 
-NumPy
+| Step | Script | Purpose |
+| --- | --- | --- |
+| 0 | `00_dataset_scan_stats.py` | Extract image resolution, spacing, and volume statistics |
+| 1 | `01_resample.py` | Resample volumes to unified voxel spacing |
+| 2 | `02_crop.py` | Center crop and pad to 160 × 160 × 16 |
+| 3 | `03_n4_bias_correction.py` | N4 bias-field correction and coefficient-of-variation assessment |
+| 4 | `04_nlm_denoising.py` | Non-local means denoising and SNR/CNR assessment |
+| 5 | `05_zscore_normalization.py` | Normalize intensities within the body region |
+| 6 | `06_clahe_histogram_equalization.py` | Slice-wise contrast enhancement |
+| 7 | `07_log_filter.py` | Laplacian-of-Gaussian edge representations |
 
-SciPy
+Run each script with the appropriate local paths and settings. For example, from the preprocessing directory:
 
-NiBabel
-
-SimpleITK
-
-DIPY
-
-Scikit-image
-
-OpenPyXL
-
-Matplotlib
-
-A complete list is provided in requirements.txt.
-
---------------
-
-Preprocessing Pipeline
-All preprocessing scripts are located in:
-
-src/preprocessing/
-They should be executed in order.
-
-Step 0: Dataset Statistics
+```bash
+cd src/preprocessing
 python 00_dataset_scan_stats.py
-Extracts image resolution, spacing, and volume statistics.
+```
 
-Step 1: Resampling
-python 01_resample.py
-Resamples all volumes to a unified voxel spacing.
+The workflow includes quantitative reports for statistical analysis.
 
-Step 2: Cropping
-python 02_crop.py
-Performs center cropping and padding to fixed size (160×160×16).
+## Deep learning training
 
-Step 3: N4 Bias-Field Correction
-python 03_n4_bias_correction.py
-Applies N4 correction and evaluates coefficient of variation.
+Training scripts are located in `src/training/`:
 
-Step 4: Non-Local Means Denoising
-python 04_nlm_denoising.py
-Performs noise suppression and computes SNR/CNR metrics.
+- `01_train_unet_no_augmentation.py`: baseline U-Net without augmentation.
+- `02_train_unet_with_augmentation.py`: U-Net with augmentation.
+- `03_train_unet_3channel.py`: multi-channel U-Net using raw, CLAHE-enhanced, and LoG-filtered images.
 
-Step 5: Z-Score Normalization
-python 05_zscore_normalization.py
-Normalizes intensities within body region.
+Example from the training directory:
 
-Step 6: CLAHE Enhancement
-python 06_clahe_histogram_equalization.py
-Applies slice-wise contrast-limited adaptive histogram equalization.
-
-Step 7: Laplacian-of-Gaussian Filtering
-python 07_log_filter.py
-Extracts edge-aware representations.
-
-All steps generate quantitative Excel reports for statistical analysis.
-
-------------------------
-
-Deep Learning Training
-Training scripts are located in:
-
-src/training/
-Baseline U-Net (No Augmentation)
-python 01_train_unet_no_augmentation.py
-
-U-Net with Data Augmentation
-python 02_train_unet_with_augmentation.py
-
-Multi-Channel U-Net (3 Inputs)
+```bash
 python 03_train_unet_3channel.py \
   --Site1_root /path/to/Site1 \
   --Site2_root /path/to/Site2 \
   --Site3_root /path/to/Site3
-Uses Raw, CLAHE-enhanced, and LoG-filtered images as three complementary channels.
+```
 
-------------
+Replace the example dataset paths with your own.
 
-Evaluation
-All training scripts compute:
+## Evaluation and reproducibility
 
-Dice Similarity Coefficient
+The training workflows evaluate Dice similarity coefficient, precision, and recall on held-out test sets, and save training curves and checkpoints.
 
-Precision
+For comparable experiments, preserve the preprocessing order, random seed, dataset splits, and model settings. Record the environment and any changes to default parameters alongside the results.
 
-Recall
+## Ethics and data availability
 
-on held-out test sets.
+MRI datasets were anonymized and used under institutional ethics approvals and data-sharing agreements. Data access is subject to institutional restrictions and ethical approval; the clinical datasets are not included here. Contact the corresponding researcher for data-access inquiries.
 
-Training curves and checkpoints are automatically saved.
+## License
 
-Reproducibility
-To reproduce experiments:
+Code is available under the [MIT License](LICENSE).
 
-Use the same preprocessing order
+## Contact
 
-Fix random seed (default = 42)
+**Hediyeh Toufani**  
+PhD Candidate, Biomedical Engineering · University of Ottawa
 
-Use identical data splits
-
-Run training scripts with default parameters
-
-All scripts explicitly set random seeds.
-
-Ethics Statement
-This study was conducted in accordance with institutional ethical regulations.
-
-All MRI datasets were anonymized prior to analysis and were used under approved data-sharing agreements.
-
-No personally identifiable information is contained in this repository.
-
-Data Availability
-Due to patient privacy and institutional restrictions, the datasets used in this study are not publicly available.
-
-Data access may be granted upon reasonable request to the corresponding author, subject to ethical approval.
-
-Code Availability
-All preprocessing and training codes are available in this repository.
-
-The code is provided for academic and research purposes.
-
-License
-This project is licensed under the MIT License. See LICENSE for details.
-
-
-Contact
-Hediyeh Toufani
-PhD Candidate, Biomedical Engineering
-University of Ottawa
-h.toufani@uottawa.ca
-
-For questions or collaboration inquiries, please contact via GitHub or institutional email.
-
+[Email](mailto:h.toufani@uottawa.ca) · [LinkedIn](https://www.linkedin.com/in/hediyehtoufani/) · [Google Scholar](https://scholar.google.com/citations?user=D49VhZYAAAAJ&hl=en)
